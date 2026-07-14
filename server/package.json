@@ -20,7 +20,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "inngest": "^4.12.1",
-    "prisma": "^6.16.2"
+    "prisma": "^6.16.2",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
