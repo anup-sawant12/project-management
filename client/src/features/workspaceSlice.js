@@ -1,9 +1,31 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { dummyWorkspaces } from "../assets/assets";
+import api from "../configs/api";
+
+export const fetchWorkspaces = createAsyncThunk(
+    "workspace/fetchWorkspaces",
+    async ({ getToken }) => {
+        try {
+           const token = await getToken();
+           
+
+            const { data } = await api.get("/api/workspaces", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            return data.workspaces || [];
+        } catch (e) {
+            console.log(e?.response?.data?.message || e.message);
+            return [];
+        }
+    }
+);
 
 const initialState = {
-    workspaces: dummyWorkspaces || [],
-    currentWorkspace: dummyWorkspaces[1],
+    workspaces:  [],
+    currentWorkspace: null,
     loading: false,
 };
 
@@ -103,7 +125,38 @@ const workspaceSlice = createSlice({
             );
         }
 
-    }
+    },
+    extraReducers: (builder) => {
+    builder
+        .addCase(fetchWorkspaces.pending, (state) => {
+            state.loading = true;
+        })
+        .addCase(fetchWorkspaces.fulfilled, (state, action) => {
+            state.loading = false;
+            state.workspaces = action.payload;
+
+            if (action.payload.length > 0) {
+                const localStorageCurrentWorkspaceId =
+                    localStorage.getItem("currentWorkspaceId");
+
+                if (localStorageCurrentWorkspaceId) {
+                    const findWorkspace = action.payload.find(
+                        (w) => w.id === localStorageCurrentWorkspaceId
+                    );
+
+                    state.currentWorkspace =
+                        findWorkspace || action.payload[0];
+                } else {
+                    state.currentWorkspace = action.payload[0];
+                }
+            } else {
+                state.currentWorkspace = null;
+            }
+        })
+        .addCase(fetchWorkspaces.rejected, (state) => {
+            state.loading = false;
+        });
+},
 });
 
 export const { setWorkspaces, setCurrentWorkspace, addWorkspace, updateWorkspace, deleteWorkspace, addProject, addTask, updateTask, deleteTask } = workspaceSlice.actions;

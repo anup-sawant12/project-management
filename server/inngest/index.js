@@ -85,40 +85,58 @@ const syncUserUpdation = inngest.createFunction(
 
 //to save workspace data to a database
 
-const syncWorkspaceCreation=inngest.createFunction(
-    {
-        id : 'sync-workspace-from-clerk',
-
-    triggers:[
-        {
-            event: 'clerk/organization.created',
-        },
+const syncWorkspaceCreation = inngest.createFunction(
+  {
+    id: "sync-workspace-from-clerk",
+    triggers: [
+      {
+        event: "clerk/organization.created",
+      },
     ],
-},
-    async ({event})=>{
-        const {data}=event
-        await prisma.workspace.create({
-            data:{
-                id: data.id,
-                name: data.name,
-                slug:data.slug,
-                ownerId:data.created_by,
-                image_url:data.image_url,
-            }
-        })
+  },
+  async ({ event }) => {
 
-        //add creator as admin member
+    console.log("Organization Created Event");
+    console.log(event.data);
 
-        await prisma.workspace.create({
-            data:{
-                userId:data.created_by,
-                workspaceId:data.id,
-                role:"ADMIN"
-            }
-        })
+
+    const { data } = event;
+
+    // Create workspace
+    await prisma.workspace.create({
+      data: {
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        ownerId: data.created_by,
+        image_url: data.image_url,
+      },
+    });
+
+    try {
+      await prisma.workspaceMember.upsert({
+        where: {
+          userId_workspaceId: {
+            userId: data.created_by,
+            workspaceId: data.id,
+          },
+        },
+        create: {
+          userId: data.created_by,
+          workspaceId: data.id,
+          role: "ADMIN",
+        },
+        update: {
+          role: "ADMIN",
+        },
+      });
+
+      console.log("WorkspaceMember created/updated successfully");
+    } catch (err) {
+      console.error("WorkspaceMember Error:", err);
     }
-
-)
+  }
+);
 
 //inngest function to update workspace data in database
 const syncWorkspaceUpdation=inngest.createFunction(
@@ -174,32 +192,38 @@ async ({event})=>{
 
 //inngest function to save workspace memn=ber data to db
 
-const syncWorkspaceMemberCreation=inngest.createFunction(
-    {
-        id:'sync-workspace-member-from-clerk',
-
-        triggers:[
+const syncWorkspaceMemberCreation = inngest.createFunction(
+  {
+        id: "sync-workspace-member-from-clerk",
+        triggers: [
             {
-                event:'clerk/organizationMembership.creation',
+                event: "clerk/organizationMembership.created",
             },
         ],
     },
+    async ({ event }) => {
+        console.log("Membership event fired");
+        console.log(event.data);
+        const { data } = event;
 
-    async ({event})=>{
-        const {data}=event;
-
-     await prisma.WorkspaceMember.create({
-                data:{
-                   userId:data.id,
-                   workspaceId:data.organization_id,
-                   role:String(data.role_name).toUpperCase(),
-
-
+        await prisma.workspaceMember.upsert({
+            where: {
+                userId_workspaceId: {
+                    userId: data.public_user_data.user_id,
+                    workspaceId: data.organization.id,
                 },
-            })
-        }
-    
-)
+            },
+            create: {
+                userId: data.public_user_data.user_id,
+                workspaceId: data.organization.id,
+                role: String(data.role).replace("org:", "").toUpperCase(),
+            },
+            update: {
+                role: String(data.role).replace("org:", "").toUpperCase(),
+            },
+        });
+    }
+);
 
 
 // Export all Inngest functions
