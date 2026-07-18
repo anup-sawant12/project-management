@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { loadTheme } from '../features/themeSlice'
 import { Loader2Icon } from 'lucide-react'
 import {useUser, SignIn, useAuth, CreateOrganization,useOrganization } from '@clerk/clerk-react'
-import { fetchWorkspaces } from '../features/workspaceSlice'
+import { fetchWorkspaces, setCurrentWorkspace } from '../features/workspaceSlice'
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -15,7 +15,7 @@ const Layout = () => {
 
     const {user,isLoaded}=useUser();
     const{getToken}=useAuth()
-     const { organization } = useOrganization();
+    const { organization } = useOrganization();
 
     // Initial load of theme
     useEffect(() => {
@@ -23,12 +23,26 @@ const Layout = () => {
     }, [])
 
     //Intial load of wokspaces
-
    useEffect(() => {
     if (isLoaded && user) {
         dispatch(fetchWorkspaces({ getToken }));
     }
 }, [isLoaded, user, dispatch, getToken, organization?.id]);
+
+    // Sync Redux currentWorkspace when active organization or workspaces list changes
+    useEffect(() => {
+        if (organization?.id && workspaces.length > 0) {
+            dispatch(setCurrentWorkspace(organization.id));
+        }
+    }, [organization?.id, workspaces, dispatch]);
+
+    if (!isLoaded) {
+        return (
+            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
+                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+            </div>
+        )
+    }
 
     if(!user){
         return (
@@ -39,7 +53,7 @@ const Layout = () => {
         )
     }
 
-    if (loading) return (
+    if (loading && workspaces.length === 0) return (
         <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
             <Loader2Icon className="size-7 text-blue-500 animate-spin" />
         </div>
