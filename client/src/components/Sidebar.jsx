@@ -33,14 +33,14 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 <div>
                     <div className='p-4'>
                         {menuItems.map((item) => (
-                            <NavLink to={item.href} key={item.name} className={({ isActive }) => `flex items-center gap-3 py-2 px-4 text-gray-800 dark:text-zinc-100 cursor-pointer rounded transition-all  ${isActive ? 'bg-gray-100 dark:bg-zinc-900 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-800/50  dark:ring-zinc-800' : 'hover:bg-gray-50 dark:hover:bg-zinc-800/60'}`} >
+                            <NavLink to={item.href} key={item.name} className={({ isActive }) => `flex items-center gap-3 py-2.5 px-4 text-sm font-medium cursor-pointer rounded-xl transition-all duration-200 ${isActive ? 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 font-semibold' : 'text-zinc-700 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200'}`} >
                                 <item.icon size={16} />
-                                <p className='text-sm truncate'>{item.name}</p>
+                                <p className='truncate'>{item.name}</p>
                             </NavLink>
                         ))}
-                        <button className='flex w-full items-center gap-3 py-2 px-4 text-gray-800 dark:text-zinc-100 cursor-pointer rounded hover:bg-gray-50 dark:hover:bg-zinc-800/60 transition-all'>
+                        <button className='flex w-full items-center gap-3 py-2.5 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-400 cursor-pointer rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200'>
                             <SettingsIcon size={16} />
-                            <p className='text-sm truncate'>Settings</p>
+                            <p className='truncate'>Settings</p>
                         </button>
                     </div>
                     <MyTasksSidebar />
