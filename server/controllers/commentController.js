@@ -14,6 +14,12 @@ export const addComment=async (req,res)=>{
             },
         })
 
+        if (!task) {
+    return res.status(404).json({
+        message: "Task not found"
+    });
+}
+
         const project=await prisma.project.findUnique({
             where:{
                 id:task.projectId
@@ -31,7 +37,7 @@ export const addComment=async (req,res)=>{
             return res.status(404).json({message:"Project not found"})
         }
 
-        const member=project.membbers.find((member)=>member.i=userId===userId);
+        const member=project.members.findMany((member)=>member.i=userId===userId);
         if(!member){
             return res.status(403).json({message:"you are not part of this project"})
         }
@@ -70,7 +76,7 @@ export const getTaskComments= async (req,res)=>{
             }
         })
 
-        res.jason({comments})
+        res.json({comments})
 
     }catch(e){
          return res.status(500).json({
