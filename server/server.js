@@ -7,6 +7,8 @@ import { serve } from "inngest/express";
 import workspaceRouter from './routes/workspaceRoutes.js'
 import { protect } from './middlewares/authMiddleware.js'
 import projectRouter from './routes/projectRoutes.js'
+import taskRouter from './routes/taskRoutes.js'
+import commentRouter from './routes/commentRouter.js'
 
 const app=express();
 
@@ -24,6 +26,8 @@ app.use('/api/inngest',serve({client:inngest,functions}));
 
 app.use("/api/workspaces",protect, workspaceRouter)
 app.use("/api/projects", protect,projectRouter)
+app.use("/api/tasks", protect,taskRouter)
+app.use("/api/comments",protect ,commentRouter)
 
 
 
