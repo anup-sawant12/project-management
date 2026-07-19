@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 import { format } from "date-fns";
+import api from "../configs/api";
+import toast from "react-hot-toast";
+import { addTask } from "../features/workspaceSlice";
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
+    const dispatch = useDispatch();
+    const { getToken } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
     const project = currentWorkspace?.projects.find((p) => p.id === projectId);
     const teamMembers = project?.members || [];
@@ -21,8 +29,52 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.title.trim()) {
+            return toast.error("Please enter a task title");
+        }
+        if (!formData.due_date) {
+            return toast.error("Please select a due date");
+        }
+        if (!formData.assigneeId) {
+            return toast.error("Please select a team member as assignee");
+        }
 
-
+        setIsSubmitting(true);
+        toast.loading("Creating task...");
+        try {
+            const token = await getToken();
+            const { data } = await api.post(
+                "/api/tasks",
+                {
+                    projectId,
+                    ...formData,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            toast.dismiss();
+            toast.success(data.message || "Task created successfully");
+            dispatch(addTask(data.task));
+            setSearchParams({ id: projectId, tab: "tasks" });
+            setShowCreateTask(false);
+            setFormData({
+                title: "",
+                description: "",
+                type: "TASK",
+                status: "TODO",
+                priority: "MEDIUM",
+                assigneeId: "",
+                due_date: "",
+            });
+        } catch (err) {
+            toast.dismiss();
+            toast.error(err.response?.data?.message || err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return showCreateTask ? (

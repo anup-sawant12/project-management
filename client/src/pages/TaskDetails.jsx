@@ -3,16 +3,17 @@ import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { CalendarIcon, MessageCircle, PenIcon } from "lucide-react";
-import { assets } from "../assets/assets";
+import api from "../configs/api";
 
 const TaskDetails = () => {
-
+    const { user } = useUser();
+    const { getToken } = useAuth();
     const [searchParams] = useSearchParams();
     const projectId = searchParams.get("projectId");
     const taskId = searchParams.get("taskId");
 
-    const user = { id : 'user_1'}
     const [task, setTask] = useState(null);
     const [project, setProject] = useState(null);
     const [comments, setComments] = useState([]);
@@ -22,7 +23,18 @@ const TaskDetails = () => {
     const { currentWorkspace } = useSelector((state) => state.workspace);
 
     const fetchComments = async () => {
-
+        if (!taskId) return;
+        try {
+            const token = await getToken();
+            const { data } = await api.get(`/api/comments/${taskId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            setComments(data.comments || []);
+        } catch (error) {
+            console.error("Failed to fetch comments:", error);
+        }
     };
 
     const fetchTaskDetails = async () => {
@@ -44,15 +56,19 @@ const TaskDetails = () => {
         if (!newComment.trim()) return;
 
         try {
-
             toast.loading("Adding comment...");
+            const token = await getToken();
+            const { data } = await api.post(
+                "/api/comments",
+                { content: newComment, taskId },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
-            //  Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            const dummyComment = { id: Date.now(), user: { id: 1, name: "User", image: assets.profile_img_a }, content: newComment, createdAt: new Date() };
-            
-            setComments((prev) => [...prev, dummyComment]);
+            setComments((prev) => [...prev, data.comment]);
             setNewComment("");
             toast.dismiss();
             toast.success("Comment added.");

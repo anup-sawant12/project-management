@@ -37,8 +37,10 @@ export const addComment=async (req,res)=>{
             return res.status(404).json({message:"Project not found"})
         }
 
-        const member=project.members.findMany((member)=>member.i=userId===userId);
-        if(!member){
+        const isMember = project.members.some((member) => member.userId === userId);
+        const isTeamLead = project.team_lead === userId;
+
+        if(!isMember && !isTeamLead){
             return res.status(403).json({message:"you are not part of this project"})
         }
 

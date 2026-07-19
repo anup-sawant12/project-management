@@ -3,6 +3,8 @@ import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
+import api from "../configs/api";
 import { deleteTask, updateTask } from "../features/workspaceSlice";
 import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
 
@@ -23,6 +25,7 @@ const priorityTexts = {
 const ProjectTasks = ({ tasks }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { getToken } = useAuth();
     const [selectedTasks, setSelectedTasks] = useState([]);
 
     const [filters, setFilters] = useState({
@@ -57,16 +60,19 @@ const ProjectTasks = ({ tasks }) => {
     const handleStatusChange = async (taskId, newStatus) => {
         try {
             toast.loading("Updating status...");
-
-            //  Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            let updatedTask = structuredClone(tasks.find((t) => t.id === taskId));
-            updatedTask.status = newStatus;
-            dispatch(updateTask(updatedTask));
-
+            const token = await getToken();
+            const { data } = await api.put(
+                `/api/tasks/${taskId}`,
+                { status: newStatus },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            dispatch(updateTask(data.task));
             toast.dismiss();
-            toast.success("Task status updated successfully");
+            toast.success(data.message || "Task status updated successfully");
         } catch (error) {
             toast.dismiss();
             toast.error(error?.response?.data?.message || error.message);
@@ -79,14 +85,20 @@ const ProjectTasks = ({ tasks }) => {
             if (!confirm) return;
 
             toast.loading("Deleting tasks...");
-
-            //  Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            dispatch(deleteTask(selectedTasks));
-
+            const token = await getToken();
+            const { data } = await api.post(
+                `/api/tasks/delete`,
+                { taskIds: selectedTasks },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            dispatch(deleteTask({ taskIds: selectedTasks, projectId: tasks[0]?.projectId }));
+            setSelectedTasks([]);
             toast.dismiss();
-            toast.success("Tasks deleted successfully");
+            toast.success(data.message || "Tasks deleted successfully");
         } catch (error) {
             toast.dismiss();
             toast.error(error?.response?.data?.message || error.message);
