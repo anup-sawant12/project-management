@@ -46,9 +46,12 @@ export const createProject = async (req, res) => {
     }
 
     // Find team lead
-    const teamLead = await prisma.user.findUnique({
+    const teamLead = await prisma.user.findFirst({
       where: {
-        email: team_lead,
+        OR: [
+          { email: team_lead },
+          { id: team_lead },
+        ],
       },
       select: {
         id: true,
@@ -190,9 +193,12 @@ export const updateProject = async (req, res) => {
       });
     }
 
-    const teamLead = await prisma.user.findUnique({
+    const teamLead = await prisma.user.findFirst({
       where: {
-        email: team_lead,
+        OR: [
+          { email: team_lead },
+          { id: team_lead },
+        ],
       },
       select: {
         id: true,

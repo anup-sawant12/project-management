@@ -2,8 +2,21 @@ import { format } from "date-fns";
 import { Plus, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AddProjectMember from "./AddProjectMember";
+import { useDispatch } from "react-redux";
+import { useAuth } from "@clerk/clerk-react";
+import { fetchWorkspaces } from "../features/workspaceSlice";
+import toast from 'react-hot-toast'
+import api from '../configs/api.js'
 
 export default function ProjectSettings({ project }) {
+     const dispatch=useDispatch()
+     const {getToken}=useAuth()
+    
+    const safeFormatDate = (dateVal) => {
+        if (!dateVal) return "";
+        const date = new Date(dateVal);
+        return isNaN(date.getTime()) ? "" : format(date, "yyyy-MM-dd");
+    };
 
     const [formData, setFormData] = useState({
         name: "New Website Launch",
@@ -20,6 +33,23 @@ export default function ProjectSettings({ project }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true)
+        toast.loading("Saving...")
+        try{
+            const {data}=await api.put('/api/projects',
+                formData,
+            {headers:{Authorization: `Bearer ${await getToken()}`}})
+            setIsDialogOpen(false)
+            dispatch(fetchWorkspaces({getToken}))
+            toast.dismiss();
+            toast.success(data.message)
+        }catch(e){
+            toast.dismiss();
+            toast.error(e.response?.data?.message || e.message)
+        }
+        finally{
+            setIsSubmitting(false)
+        }
 
     };
 
@@ -78,11 +108,11 @@ export default function ProjectSettings({ project }) {
                     <div className="space-y-4 grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className={labelClasses}>Start Date</label>
-                            <input type="date" value={format(formData.start_date, "yyyy-MM-dd")} onChange={(e) => setFormData({ ...formData, start_date: new Date(e.target.value) })} className={inputClasses} />
+                            <input type="date" value={safeFormatDate(formData.start_date)} onChange={(e) => setFormData({ ...formData, start_date: new Date(e.target.value) })} className={inputClasses} />
                         </div>
                         <div className="space-y-2">
                             <label className={labelClasses}>End Date</label>
-                            <input type="date" value={format(formData.end_date, "yyyy-MM-dd")} onChange={(e) => setFormData({ ...formData, end_date: new Date(e.target.value) })} className={inputClasses} />
+                            <input type="date" value={safeFormatDate(formData.end_date)} onChange={(e) => setFormData({ ...formData, end_date: new Date(e.target.value) })} className={inputClasses} />
                         </div>
                     </div>
 
